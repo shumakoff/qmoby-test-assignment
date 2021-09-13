@@ -1,0 +1,41 @@
+{
+  "name": "battleships",
+  "description": "A test assignment for qmoby",
+  "version": "1.0.0",
+  "author": "Anatolii Shumakov <a.shumakoff@protonmail.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack-dev-server --progress",
+    "staging": "cross-env NODE_ENV=staging webpack",
+    "build": "cross-env NODE_ENV=production webpack"
+  },
+  "dependencies": {
+    "vue": "^2.6.14",
+    "vue-native-websocket": "^2.0.15"
+  },
+  "devDependencies": {
+    "@babel/polyfill": "^7.12.1",
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.0",
+    "babel-preset-stage-3": "^6.24.1",
+    "compression-webpack-plugin": "~2.0",
+    "cross-env": "^5.2.1",
+    "css-loader": "^0.28.7",
+    "file-loader": "^1.1.4",
+    "friendly-errors-webpack-plugin": "^1.7.0",
+    "html-webpack-plugin": "~3.2",
+    "mini-css-extract-plugin": "^0.5.0",
+    "optimize-css-assets-webpack-plugin": "^6.0.1",
+    "uglify-js": "^3.14.1",
+    "uglifyjs-webpack-plugin": "^2.2.0",
+    "vue-loader": "^15.9.8",
+    "vue-template-compiler": "^2.4.4",
+    "webpack": "^4.46.0",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-middleware": "^5.0.0",
+    "webpack-dev-server": "^3.11.2",
+    "webpack-merge": "^5.8.0"
+  }
+}
