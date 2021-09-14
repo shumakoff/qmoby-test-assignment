@@ -1,35 +1,41 @@
 <template>
-  <div>
-    State your name
-    <p>
-      <input v-model="playerName">
-    </p>
-    <button v-on:click="login">Let's go</button>
+  <div v-if="playerName == ''">
+    <login v-on:login="enterRoom($event)"/>
+  </div>
+  <div v-else>
+    <room v-bind:player-name="playerName" v-bind:room-number="roomNumber"></room>
   </div>
 </template>
 
 <script>
 
+import Login from '../components/Login.vue'
+import Room from '../components/Room.vue'
+
 export default {
   components: {
+    'login': Login,
+    'room': Room
   },
   data () {
     return {
       playerName: "",
+      roomNumber: "",
     }
   },
-
+  mounted() {
+  },
   methods: {
     log(message) {
       console.log(message);
     },
-    login() {
-      console.log(this.playerName + " enters game");
-    },
+    enterRoom(loginData) {
+      this.playerName = loginData['playerName']
+      this.roomNumber = loginData['roomNumber']
+    }
   },
   computed: {
-
-    },
+  },
 }
 </script>
 

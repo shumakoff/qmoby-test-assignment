@@ -5,7 +5,7 @@ from channels.generic.websocket import WebsocketConsumer
 import channels.exceptions
 
 
-class ChatConsumer(WebsocketConsumer):
+class CoreConsumer(WebsocketConsumer):
     def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_number']
         self.room_group_name = 'chat_%s' % self.room_name
