@@ -4,11 +4,11 @@
       Welcome to the game, {{ playerName }}
     </p>
     <div class="row">
-      <div class="column">
-        <chat v-bind:player-name="playerName" v-bind:room-number="roomNumber"/>
+      <div class="column-chat">
+        <chat v-bind:player-name="playerName"/>
       </div>
       <div class="column">
-        <game v-bind:player-name="playerName" v-bind:room-number="roomNumber"/>
+        <game v-bind:player-name="playerName"/>
       </div>
     </div> 
   </div>
@@ -24,7 +24,7 @@ export default {
     'chat': Chat,
     'game': Game
   },
-  props: ['playerName', 'roomNumber'],
+  props: ['playerName'],
   data () {
     return {
     }
@@ -46,7 +46,11 @@ export default {
 }
 
 .column {
-  flex: 50%;
+  flex: 70%;
+}
+
+.column-chat {
+  flex: 30%;
 }
 </style>
 

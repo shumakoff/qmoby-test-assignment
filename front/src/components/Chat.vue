@@ -1,20 +1,13 @@
 <template>
   <div>
         <p>Chat</p>
-        <p v-if="chatConn != null">
-          Socket is {{ socketState }}
-        </p>
-        <p v-else>
-          Socket disconnected
-        </p>
         <input v-on:click="clearInput" v-model="chatInput">
         <button v-on:click="sendChatMessage">Send message</button>
-        <table>
-          <tr v-for="(msg, index) in messages" :key="index">
-            <td><{{ msg['player_name'] }}></td>
-            <td>{{ msg['message'] }}</td>
-            <td v-if="msg['delivered_server']">&#x2611;</td>
-            <td v-if="msg['delivered_player']">V</td>
+        <table class="regular">
+          <tr v-for="(msg, index) in messages" :key="index" class="regular">
+            <td class="regular"><{{ msg['player_name'] }}></td>
+            <td class="regular">{{ msg['message'] }}</td>
+            <td v-if="msg['delivered_server']" class="regular">&#x2611;</td>
             <!--td v-for="(key, index) in msg" :key="index">{{ key }}</td-->
           </tr>
         </table>
@@ -29,10 +22,9 @@
 export default {
   components: {
   },
-  props: ['playerName', 'roomNumber'],
+  props: ['playerName'],
   data () {
     return {
-      socketState: null,
       chatConn: null,
       chatInput: "enter your message",
       messages: {},
@@ -48,10 +40,9 @@ export default {
       this.chatInput = ""
     },
     startWebsocket() {
-      this.chatConn = new WebSocket('ws://127.0.0.1:8000/ws/chat/'+this.roomNumber+'/')
+      this.chatConn = new WebSocket('ws://192.168.1.39:8000/ws/chat/1/')
 
       this.chatConn.onopen = (event) => {
-        this.socketState = 'connected'
         // sending queued messages
         for (var [key, value] of Object.entries(this.messages)) {
           if (!value['delivered_server'] && value['player_name'] == this.playerName) {
@@ -63,18 +54,17 @@ export default {
       }
 
       this.chatConn.onclose = (eventclose) => {
-        this.socketState = 'closed'
         this.chatConn = null
         setTimeout(this.startWebsocket, 5000)
       },
       this.chatConn.onerror = (eventclose) => {
-        this.socketState = 'error'
       }
       this.chatConn.onmessage = (event) => {
         var messageJsonData = JSON.parse(event.data)
+        console.log(messageJsonData)
 
+        // this is confirmation from the server that it has received message
         if (messageJsonData.hasOwnProperty('ack')) {
-          // this is confirmation from the server that it has received message
           var ackInternalId = messageJsonData['ack']['internal_id']
           if (ackInternalId in this.messages) {
             var sentMessage = this.messages[ackInternalId]
@@ -83,12 +73,14 @@ export default {
             this.chatInput = ""
             this.chatInput = "enter your message"
           }
+
+        // this is a regular user message
         } else if (messageJsonData.hasOwnProperty('message')) {
-          // this is a regular user message
+          console.log('this is regular message')
           if (messageJsonData['message']['player_name'] != this.playerName) {
             this.messages[messageJsonData['message']['internal_id']] = messageJsonData['message']
             // send confirmation
-            this.chatConn.send(JSON.stringify(chatMessage))
+            //this.chatConn.send(JSON.stringify(chatMessage))
             this.chatInput = ""
             this.chatInput = "enter your message"
           } 
@@ -96,13 +88,16 @@ export default {
       }
     },
     
-    sendChatMessage() {
+    sendChatMessage(message) {
       var chatMessage = new Object
       chatMessage['player_name'] = this.playerName
       chatMessage['internal_id'] = this.uuidv4()
       chatMessage['delivered_server'] = false
       chatMessage['delivered_player'] = false
       chatMessage['message'] = this.chatInput
+      if (message) {
+        chatMessage['message'] = message
+      }
       this.messages[chatMessage['internal_id']] = chatMessage
       this.chatConn.send(JSON.stringify(chatMessage))
       this.chatInput = ""
@@ -131,6 +126,10 @@ export default {
 
 .column {
   flex: 50%;
+}
+
+.regular {
+  border: none;
 }
 </style>
 

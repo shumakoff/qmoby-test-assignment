@@ -1,9 +1,9 @@
 <template>
-  <div v-if="playerName == ''">
+  <div v-if="playerName == ''" class="container">
     <login v-on:login="enterRoom($event)"/>
   </div>
   <div v-else>
-    <room v-bind:player-name="playerName" v-bind:room-number="roomNumber"></room>
+    <room v-bind:player-name="playerName"></room>
   </div>
 </template>
 
@@ -20,7 +20,6 @@ export default {
   data () {
     return {
       playerName: "",
-      roomNumber: "",
     }
   },
   mounted() {
@@ -31,7 +30,6 @@ export default {
     },
     enterRoom(loginData) {
       this.playerName = loginData['playerName']
-      this.roomNumber = loginData['roomNumber']
     }
   },
   computed: {
@@ -39,6 +37,14 @@ export default {
 }
 </script>
 
+
 <style>
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 </style>
 

@@ -1,5 +1,38 @@
 <template>
   <div>
+
+    <div class="row">
+
+      <!-- player map -->
+      <div class="column">
+        <table>
+          <tr v-for="mapRow, y_cor in playerMap">
+            <td v-for="mapCell, x_cor in mapRow" v-bind:class="{'bg-ship': mapCell, 'bg-hit': mapCell==2, 'bg-water': !mapCell}"></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- player shots -->
+      <div class="column">
+        <table>
+          <tr v-for="mapRow, y_cor in playerShots">
+            <td v-for="mapCell, x_cor in mapRow"
+                v-bind:class="{'bg-miss': mapCell==3,
+			       'bg-hit': mapCell==2&myturn,
+			       'bg-water':
+			       !mapCell&inprogress&myturn,
+                               'bg-disabled': !inprogress|!myturn&mapCell!=2,
+                               'bg-hit-disabled': !myturn&mapCell==2}"
+                v-on:click="sendHit(y_cor, x_cor)"></td>
+          </tr>
+        </table>
+      </div>
+
+    </div>
+
+    <h1 v-if="!inprogress">Waiting for other player to join</h1>
+    <h1 v-if="gameFinished">{{ winner }} have wonnered!!!11</h1>
+
   </div>
 </template>
 
@@ -9,67 +42,144 @@
 export default {
   components: {
   },
-  props: ['playerName', 'roomNumber'],
+  props: ['playerName'],
   data () {
     return {
+      playerMap: [],
+      playerShots: [],
+      inprogress: false,
+      myturn: false,
+      gameFinished: false,
+      winner: ""
     }
   },
   mounted () {
     this.startWebsocket()
   },
+
   methods: {
+
     clearInput() {
       this.chatInput = ""
     },
+
+    sendHit(y_cor, x_cor) {
+      if (!this.inprogress | !this.myturn | this.gameFinished) {
+        return
+      }	
+      console.log(y_cor+' '+x_cor)
+      var chatMessage = {}
+      chatMessage['message'] = {}
+      chatMessage['player_name'] = this.playerName
+      chatMessage['message_type'] = 'move'
+      chatMessage['message']['y_cor'] = y_cor
+      chatMessage['message']['x_cor'] = x_cor
+      this.chatConn.send(JSON.stringify(chatMessage))
+    },
+
     startWebsocket() {
-      this.chatConn = new WebSocket('ws://127.0.0.1:8000/ws/game/'+this.roomNumber+'/')
+      this.chatConn = new WebSocket('ws://192.168.1.39:8000/ws/game/1/')
 
       this.chatConn.onopen = (event) => {
-        this.socketState = 'connected'
-        // sending queued messages
-        for (var [key, value] of Object.entries(this.messages)) {
-          if (!value['delivered_server'] && value['player_name'] == this.playerName) {
-            console.log('retrying delivery: ', key)
-            this.chatConn.send(JSON.stringify(value))
-          }
-        }
-        this.chatInput = ""
+        this.sendJoinMessage()
       }
 
       this.chatConn.onclose = (eventclose) => {
-        this.socketState = 'closed'
         this.chatConn = null
         setTimeout(this.startWebsocket, 5000)
       },
+
       this.chatConn.onerror = (eventclose) => {
-        this.socketState = 'error'
       }
+
       this.chatConn.onmessage = (event) => {
         var messageJsonData = JSON.parse(event.data)
+        console.log(messageJsonData)
 
-        if (messageJsonData.hasOwnProperty('ack')) {
-          // this is confirmation from the server that it has received message
-          var ackInternalId = messageJsonData['ack']['internal_id']
-          if (ackInternalId in this.messages) {
-            var sentMessage = this.messages[ackInternalId]
-            sentMessage['message_id'] = messageJsonData['ack']['message_id']
-            sentMessage['delivered_server'] = true
-            this.chatInput = ""
-            this.chatInput = "enter your message"
-          }
-        } else if (messageJsonData.hasOwnProperty('message')) {
-          // this is a regular user message
-          if (messageJsonData['message']['player_name'] != this.playerName) {
-            this.messages[messageJsonData['message']['internal_id']] = messageJsonData['message']
-            // send confirmation
-            this.chatConn.send(JSON.stringify(chatMessage))
-            this.chatInput = ""
-            this.chatInput = "enter your message"
-          } 
-        }
+        if (messageJsonData['message_type'] == 'game_state') {
+          console.log('we have received game state, updating')
+          this.updateGameState(messageJsonData['message'])
+	} 
+
+	else if (messageJsonData['message_type'] == 'announce_start') {
+          console.log('Starting the game')
+          this.startGame(messageJsonData)
+          this.switchTurns(messageJsonData)
+        } 
+
+	else if (messageJsonData['message_type'] == 'announce_nextmove') {
+          console.log('Received next move data')
+          this.switchTurns(messageJsonData)
+        } 
+
+	else if (messageJsonData['message_type'] == 'announce_hit') {
+          console.log('Received hit data')
+          this.processHit(messageJsonData)
+        } 
+
+	else if (messageJsonData['message_type'] == 'announce_victory') {
+          console.log('Received victory event')
+          this.victory(messageJsonData)
+        } 
       }
     },
+
+    processHit(message) {
+      var playerName = message['message']['player_name']
+      var y_cor = message['message']['y_cor']
+      var x_cor = message['message']['x_cor']
+      if (playerName == this.playerName) {
+        if (message['message']['hit']) {
+            var hitMarker = 2
+        } else { 
+            var hitMarker = 3
+        }
+        // fuck vue reactivity
+        var map_row = this.playerShots[y_cor]
+        map_row[x_cor] = hitMarker
+        this.playerShots.splice(y_cor, 1, map_row)
+      } else {
+        if (message['message']['hit']) {
+          var map_row = this.playerMap[y_cor]
+          map_row[x_cor] = 2
+          this.playerMap.splice([y_cor], 1, map_row)
+         }
+      }
+    },
+
+    victory(message) {
+      this.winner = message['message']['player_name']
+      this.gameFinished = true
+    },
+
+    startGame(message) {
+      this.inprogress = true
+    },
+
+    switchTurns(message) {
+      if (message['message']['move'] == this.playerName) {
+        console.log('yay')
+        this.myturn = true
+      } else {
+        console.log('nay')
+        this.myturn = false
+      }
+    },
+
+    updateGameState(state) {
+      if (state.hasOwnProperty('player_map')) {
+        this.playerMap = state['player_map']
+      }
+      this.playerShots = state['player_shots']
+    },
     
+    sendJoinMessage() {
+      var chatMessage = new Object
+      chatMessage['player_name'] = this.playerName
+      chatMessage['message_type'] = 'join'
+      this.chatConn.send(JSON.stringify(chatMessage))
+    },
+
     sendChatMessage() {
       var chatMessage = new Object
       chatMessage['player_name'] = this.playerName
@@ -106,5 +216,45 @@ export default {
 .column {
   flex: 50%;
 }
+
+table {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+
+td, th {
+  border: 1px solid black;
+  border-collapse: collapse;
+  width: 30px;
+  height: 30px;
+}
+
+.bg-ship {
+  background-color: gray;
+}
+
+.bg-hit {
+  background-color: pink;
+}
+
+.bg-hit-disabled {
+  background-color: darkgrey;
+}
+
+.bg-miss {
+  background-color: lightblue;
+  background-image:
+    linear-gradient(to bottom right,  transparent calc(50% - 1px), red, transparent calc(50% + 1px)), 
+    linear-gradient(to bottom left,  transparent calc(50% - 1px), red, transparent calc(50% + 1px)); 
+}
+
+.bg-water {
+  background-color: lightblue;
+}
+
+.bg-disabled {
+  background-color: lightgray;
+}
+
 </style>
 

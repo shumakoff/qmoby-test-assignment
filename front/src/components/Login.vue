@@ -1,12 +1,8 @@
 <template>
-  <div>
+  <div class="center">
     State your name
     <p>
       <input v-model="playerName"/>
-    </p>
-    Enter room number
-    <p>
-      <input v-model="roomNumber">
     </p>
     <button v-on:click="login">Let's go</button>
   </div>
@@ -21,12 +17,11 @@ export default {
   data () {
     return {
       playerName: "playerOne",
-      roomNumber: 1,
     }
   },
   methods: {
     login() {
-      this.$emit('login', {'playerName': this.playerName, 'roomNumber': this.roomNumber});
+      this.$emit('login', {'playerName': this.playerName});
     },
   },
   computed: {
@@ -36,5 +31,9 @@ export default {
 </script>
 
 <style>
+
+.center {
+}
+
 </style>
 
