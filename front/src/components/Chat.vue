@@ -1,7 +1,7 @@
 <template>
   <div>
         <p>Chat</p>
-        <input v-on:click="clearInput" v-model="chatInput">
+        <input v-model="chatInput" v-on:keyup.enter="sendChatMessage" placeholder="enter your message">
         <button v-on:click="sendChatMessage">Send message</button>
         <table class="regular">
           <tr v-for="(msg, index) in messages" :key="index" class="regular">
@@ -26,7 +26,7 @@ export default {
   data () {
     return {
       chatConn: null,
-      chatInput: "enter your message",
+      chatInput: "",
       messages: {},
       messageID: 0,
       networkDown: false,
@@ -36,13 +36,11 @@ export default {
     this.startWebsocket()
   },
   methods: {
-    clearInput() {
-      this.chatInput = ""
-    },
     startWebsocket() {
       this.chatConn = new WebSocket('ws://192.168.1.39:8000/ws/chat/1/')
 
       this.chatConn.onopen = (event) => {
+        this.joinChat()
         // sending queued messages
         for (var [key, value] of Object.entries(this.messages)) {
           if (!value['delivered_server'] && value['player_name'] == this.playerName) {
@@ -50,7 +48,6 @@ export default {
             this.chatConn.send(JSON.stringify(value))
           }
         }
-        this.chatInput = ""
       }
 
       this.chatConn.onclose = (eventclose) => {
@@ -64,44 +61,57 @@ export default {
         console.log(messageJsonData)
 
         // this is confirmation from the server that it has received message
-        if (messageJsonData.hasOwnProperty('ack')) {
-          var ackInternalId = messageJsonData['ack']['internal_id']
+        if (messageJsonData['type'] == 'ack_message') {
+          console.log('got delivery confirmation')
+          var ackInternalId = messageJsonData['internal_id']
           if (ackInternalId in this.messages) {
             var sentMessage = this.messages[ackInternalId]
-            sentMessage['message_id'] = messageJsonData['ack']['message_id']
+            sentMessage['message_id'] = messageJsonData['message_id']
             sentMessage['delivered_server'] = true
-            this.chatInput = ""
-            this.chatInput = "enter your message"
           }
+          return
 
         // this is a regular user message
-        } else if (messageJsonData.hasOwnProperty('message')) {
-          console.log('this is regular message')
+        } else if (messageJsonData['type'] == 'chat_message') {
           if (messageJsonData['message']['player_name'] != this.playerName) {
-            this.messages[messageJsonData['message']['internal_id']] = messageJsonData['message']
+            console.log('this is regular message from '+messageJsonData['message']['player_name'])
+            var internalId = messageJsonData['message']['internal_id']
+            this.$set(this.messages, internalId, messageJsonData['message'])
             // send confirmation
-            //this.chatConn.send(JSON.stringify(chatMessage))
-            this.chatInput = ""
-            this.chatInput = "enter your message"
+            // no need to confirm for server anno
+            if (messageJsonData['message']['player_name'] == 'Server Announcement') {
+              return
+            }
+            var confirmationMessage = {}
+            confirmationMessage['type'] = 'ack_message'
+            confirmationMessage['internal_id'] = messageJsonData['message']['internal_id']
+            confirmationMessage['message_id'] = messageJsonData['message']['message_id']
+            console.log('sending delivery confirmation')
+            console.log(confirmationMessage)
+            this.chatConn.send(JSON.stringify(confirmationMessage))
           } 
         }
       }
     },
+
+    joinChat() {
+      this.chatConn.send(JSON.stringify({
+        'type':'join_message',
+        'player_name': this.playerName}))
+    },
     
-    sendChatMessage(message) {
+    sendChatMessage() {
+      if (!this.chatInput) { return }
       var chatMessage = new Object
+      chatMessage['type'] = 'chat_message'
       chatMessage['player_name'] = this.playerName
       chatMessage['internal_id'] = this.uuidv4()
       chatMessage['delivered_server'] = false
       chatMessage['delivered_player'] = false
       chatMessage['message'] = this.chatInput
-      if (message) {
-        chatMessage['message'] = message
-      }
-      this.messages[chatMessage['internal_id']] = chatMessage
+      this.$set(this.messages, chatMessage['internal_id'], chatMessage)
       this.chatConn.send(JSON.stringify(chatMessage))
       this.chatInput = ""
-      this.chatInput = "enter your message"
     },
 
     uuidv4() {

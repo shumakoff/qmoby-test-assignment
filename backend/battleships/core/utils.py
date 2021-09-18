@@ -14,7 +14,6 @@ def generate_map():
     map_row = [vacant_id] * 10
     map_arr = [map_row.copy() for x in range(10)]
     ship_sizes = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1]
-    ship_sizes = [4]
     for i in range(len(ship_sizes)):
         ship_size = ship_sizes[i]
         ship_direction = randint(0, 1)  # 0 for horizontal, 1 for vertical
