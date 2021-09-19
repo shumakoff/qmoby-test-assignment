@@ -2,9 +2,12 @@
   <div class="center">
     State your name
     <p>
-      <input v-model="playerName" v-on:keyup.enter="login"/>
+      <input v-model="playerName" v-on:keyup.enter="login" v-bind:class="{error: nameError}"/>
     </p>
-    <button v-on:click="login">Let's go</button>
+      <p v-if="nameError" class="error">
+        Name length should be 1 to 11 chars and include only alphanumeric symbols
+      </p>
+    <button v-on:click="login" :disabled="nameError">Let's go</button>
   </div>
 </template>
 
@@ -17,22 +20,36 @@ export default {
   data () {
     return {
       playerName: "playerOne",
+      nameError: false
     }
   },
   methods: {
     login() {
-      this.$emit('login', {'playerName': this.playerName});
+      if (!this.nameError) {
+        this.$emit('login', {'playerName': this.playerName})
+      }
     },
   },
   computed: {
 
     },
+  watch: {
+    playerName: function (val) {
+      if ((val.length > 12) | (!val.match(/^[0-9a-z]+$/))) { this.nameError = true }
+      else { this.nameError = false }
+    }
+  },
 }
 </script>
 
 <style>
 
 .center {
+}
+
+.error {
+  border-color: red;
+  border: solid;
 }
 
 </style>

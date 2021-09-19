@@ -27,6 +27,7 @@ export default {
     return {
       chatConn: null,
       chatInput: "",
+      chatError: false,
       messages: {},
       messageID: 0,
       networkDown: false,
@@ -37,7 +38,7 @@ export default {
   },
   methods: {
     startWebsocket() {
-      this.chatConn = new WebSocket('ws://192.168.1.39:8000/ws/chat/1/')
+      this.chatConn = new WebSocket('ws://'+window.location.hostname+':8000/ws/chat/1/')
 
       this.chatConn.onopen = (event) => {
         this.joinChat()
@@ -102,6 +103,7 @@ export default {
     
     sendChatMessage() {
       if (!this.chatInput) { return }
+      if (this.chatEror) { return }
       var chatMessage = new Object
       chatMessage['type'] = 'chat_message'
       chatMessage['player_name'] = this.playerName

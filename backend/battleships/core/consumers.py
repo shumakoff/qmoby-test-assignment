@@ -144,6 +144,9 @@ class CoreConsumer(JsonWebsocketConsumer):
                     other_player = [x for x in self.game_db.lrange('players_list', 0, -1) if x != player_name][0]
                     player_shots = json.loads(self.game_db.get(player_name+'_shots'))
                     other_player_map = json.loads(self.game_db.get(other_player+'_map'))
+                    # ingore already struck cells
+                    if other_player_map[y_cor][x_cor] in [2,3]:
+                        return
                     # check if we hit something
                     if other_player_map[y_cor][x_cor] == 1:
                         other_player_map[y_cor][x_cor] = 2
@@ -152,6 +155,7 @@ class CoreConsumer(JsonWebsocketConsumer):
                         hit = True
                     else:
                         player_shots[y_cor][x_cor] = 3
+                        other_player_map[y_cor][x_cor] = 3
                         next_move = other_player
                         hit = False
                     # save info about hit
@@ -159,7 +163,6 @@ class CoreConsumer(JsonWebsocketConsumer):
                     self.game_db.set(other_player+'_map', json.dumps(other_player_map))
                     self.game_db.set('next_move', next_move)
                     # notify the player about hit or miss
-                    # TODO notify other player about game state
                     async_to_sync(self.channel_layer.group_send)(
                         self.room_group_name,
                         {

@@ -7,7 +7,10 @@
       <div class="column">
         <table>
           <tr v-for="mapRow, y_cor in playerMap">
-            <td v-for="mapCell, x_cor in mapRow" v-bind:class="{'bg-ship': mapCell, 'bg-hit': mapCell==2, 'bg-water': !mapCell}"></td>
+            <td v-for="mapCell, x_cor in mapRow" v-bind:class="{'bg-ship': mapCell,
+                                                                'bg-miss': mapCell==3,
+                                                                'bg-hit': mapCell==2,
+                                                                'bg-water': !mapCell}"></td>
           </tr>
         </table>
       </div>
@@ -31,6 +34,7 @@
     </div>
 
     <h1 v-if="!inprogress">Waiting for other player to join</h1>
+    <h1 v-if="!gameFinished&myturn">Your turn</h1>
     <h1 v-if="gameFinished">{{ winner }} have wonnered!!!11</h1>
 
   </div>
@@ -78,7 +82,7 @@ export default {
     },
 
     startWebsocket() {
-      this.chatConn = new WebSocket('ws://192.168.1.39:8000/ws/game/1/')
+      this.chatConn = new WebSocket('ws://'+window.location.hostname+':8000/ws/game/1/')
 
       this.chatConn.onopen = (event) => {
         this.sendJoinMessage()
@@ -125,26 +129,27 @@ export default {
     },
 
     processHit(message) {
+      console.log(message)
       var playerName = message['message']['player_name']
       var y_cor = message['message']['y_cor']
       var x_cor = message['message']['x_cor']
+      if (message['message']['hit']) {
+          console.log('this is a hit')
+          var hitMarker = 2
+      } else { 
+          console.log('this is a miss')
+          var hitMarker = 3
+      }
       if (playerName == this.playerName) {
-        if (message['message']['hit']) {
-            var hitMarker = 2
-        } else { 
-            var hitMarker = 3
-        }
         // fuck vue reactivity
         var map_row = this.playerShots[y_cor]
         map_row[x_cor] = hitMarker
         this.playerShots.splice(y_cor, 1, map_row)
       } else {
-        if (message['message']['hit']) {
-          var map_row = this.playerMap[y_cor]
-          map_row[x_cor] = 2
-          this.playerMap.splice([y_cor], 1, map_row)
+        var map_row = this.playerMap[y_cor]
+        map_row[x_cor] = hitMarker
+        this.playerMap.splice([y_cor], 1, map_row)
          }
-      }
     },
 
     victory(message) {
