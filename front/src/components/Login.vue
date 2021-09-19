@@ -35,7 +35,7 @@ export default {
     },
   watch: {
     playerName: function (val) {
-      if ((val.length > 12) | (!val.match(/^[0-9a-z]+$/))) { this.nameError = true }
+      if ((val.length > 12) | (!val.match(/^[0-9a-zA-Z]+$/))) { this.nameError = true }
       else { this.nameError = false }
     }
   },

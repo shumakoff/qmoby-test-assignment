@@ -78,6 +78,7 @@ class CoreConsumer(JsonWebsocketConsumer):
                                 })
             else:
                 self.send_json('go away')
+                return
         else:
             # joining new game
             # check if we still have open slots
@@ -119,7 +120,10 @@ class CoreConsumer(JsonWebsocketConsumer):
             self.send_json('Game has already started')
         if len(self.game_db.lrange('players_list', 0, -1)) == 2:
             self.game_db.set('inprogress', 1)
-            next_move = self.game_db.lrange('players_list', 1, 1)[0]
+            if self.game_db.get('next_move'):
+                next_move = self.game_db.get('next_move')
+            else:
+                next_move = self.game_db.lrange('players_list', 1, 1)[0]
             self.game_db.set('next_move', next_move)
             async_to_sync(self.channel_layer.group_send)(
                 self.room_group_name,
