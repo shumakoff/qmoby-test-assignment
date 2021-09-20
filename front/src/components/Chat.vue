@@ -45,7 +45,6 @@ export default {
         // sending queued messages
         for (var [key, value] of Object.entries(this.messages)) {
           if (!value['delivered_server'] && value['player_name'] == this.playerName) {
-            console.log('retrying delivery: ', key)
             this.chatConn.send(JSON.stringify(value))
           }
         }
@@ -59,11 +58,9 @@ export default {
       }
       this.chatConn.onmessage = (event) => {
         var messageJsonData = JSON.parse(event.data)
-        console.log(messageJsonData)
 
         // this is confirmation from the server that it has received message
         if (messageJsonData['type'] == 'ack_message') {
-          console.log('got delivery confirmation')
           var ackInternalId = messageJsonData['internal_id']
           if (ackInternalId in this.messages) {
             var sentMessage = this.messages[ackInternalId]
@@ -75,7 +72,6 @@ export default {
         // this is a regular user message
         } else if (messageJsonData['type'] == 'chat_message') {
           if (messageJsonData['message']['player_name'] != this.playerName) {
-            console.log('this is regular message from '+messageJsonData['message']['player_name'])
             var internalId = messageJsonData['message']['internal_id']
             this.$set(this.messages, internalId, messageJsonData['message'])
             // send confirmation
@@ -87,7 +83,6 @@ export default {
             confirmationMessage['type'] = 'ack_message'
             confirmationMessage['internal_id'] = messageJsonData['message']['internal_id']
             confirmationMessage['message_id'] = messageJsonData['message']['message_id']
-            console.log('sending delivery confirmation')
             console.log(confirmationMessage)
             this.chatConn.send(JSON.stringify(confirmationMessage))
           } 

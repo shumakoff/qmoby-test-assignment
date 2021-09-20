@@ -104,10 +104,7 @@ class CoreConsumer(JsonWebsocketConsumer):
                                         'player_shots': player_shots
                                         }
                                     })
-                    for row in player_map:
-                        print(row)
             else:
-                print('room capacity reached, players in the room',self.game_db.lrange('players_list', 0, -1),'joining player',player_name)
                 self.send_json('We are at capacity, sir')
                 self.close()
 
@@ -183,7 +180,6 @@ class CoreConsumer(JsonWebsocketConsumer):
                     """
                     # check if other player has any ships left
                     if not any(1 in map_row for map_row in other_player_map):
-                        print('victory condition')
                         async_to_sync(self.channel_layer.group_send)(
                             self.room_group_name,
                             {
@@ -200,12 +196,10 @@ class CoreConsumer(JsonWebsocketConsumer):
                                 'message': {'move': next_move},
                             })
                 else:
-                    print('It\'s not your turn')
                     self.send_json('It\'s not you turn')
 
 
     def announce_move(self, event):
-        print('this is an announce_hit method')
         message = event['message']
 
         self.send(text_data=json.dumps({
@@ -215,7 +209,6 @@ class CoreConsumer(JsonWebsocketConsumer):
 
 
     def announce_victory(self, event):
-        print('this is an announce_victory methid')
         message = event['message']
 
         # Send message to WebSocket
@@ -226,7 +219,6 @@ class CoreConsumer(JsonWebsocketConsumer):
 
 
     def announce_nextmove(self, event):
-        print('this is an announce_nextmove methid')
         message = event['message']
 
         # Send message to WebSocket
@@ -237,7 +229,6 @@ class CoreConsumer(JsonWebsocketConsumer):
 
 
     def announce_start(self, event):
-        print(event)
         message = event['message']
 
         # Send message to WebSocket

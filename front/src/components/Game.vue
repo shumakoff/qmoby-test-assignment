@@ -71,7 +71,6 @@ export default {
       if (!this.inprogress | !this.myturn | this.gameFinished) {
         return
       }	
-      console.log(y_cor+' '+x_cor)
       var chatMessage = {}
       chatMessage['message'] = {}
       chatMessage['player_name'] = this.playerName
@@ -98,46 +97,37 @@ export default {
 
       this.chatConn.onmessage = (event) => {
         var messageJsonData = JSON.parse(event.data)
-        console.log(messageJsonData)
 
         if (messageJsonData['message_type'] == 'game_state') {
-          console.log('we have received game state, updating')
           this.updateGameState(messageJsonData['message'])
 	} 
 
 	else if (messageJsonData['message_type'] == 'announce_start') {
-          console.log('Starting the game')
           this.startGame(messageJsonData)
           this.switchTurns(messageJsonData)
         } 
 
 	else if (messageJsonData['message_type'] == 'announce_nextmove') {
-          console.log('Received next move data')
           this.switchTurns(messageJsonData)
         } 
 
 	else if (messageJsonData['message_type'] == 'announce_hit') {
-          console.log('Received hit data')
           this.processHit(messageJsonData)
         } 
 
 	else if (messageJsonData['message_type'] == 'announce_victory') {
-          console.log('Received victory event')
           this.victory(messageJsonData)
         } 
       }
     },
 
     processHit(message) {
-      console.log(message)
       var playerName = message['message']['player_name']
       var y_cor = message['message']['y_cor']
       var x_cor = message['message']['x_cor']
       if (message['message']['hit']) {
-          console.log('this is a hit')
           var hitMarker = 2
       } else { 
-          console.log('this is a miss')
           var hitMarker = 3
       }
       if (playerName == this.playerName) {
@@ -163,10 +153,8 @@ export default {
 
     switchTurns(message) {
       if (message['message']['move'] == this.playerName) {
-        console.log('yay')
         this.myturn = true
       } else {
-        console.log('nay')
         this.myturn = false
       }
     },
